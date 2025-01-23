@@ -179,6 +179,24 @@ window.addEventListener("resize", function (event) {
     draw();
 });
 
+window.addEventListener("touchstart", function (event) {
+    event.preventDefault(); // Prevents blue highlight
+    if (phase == "waiting") {
+        lastTimestamp = undefined;
+        introductionElement.style.opacity = 0;
+        phase = "stretching";
+        window.requestAnimationFrame(animate);
+    }
+}, { passive: false }); // Important to prevent default touch behavior
+
+window.addEventListener("touchend", function (event) {
+    event.preventDefault(); // Prevents blue highlight
+    if (phase == "stretching") {
+        phase = "turning";
+    }
+}, { passive: false });
+
+
 window.requestAnimationFrame(animate);
 
 // The main game loop
