@@ -66,9 +66,12 @@ const highScoreElement = document.getElementById("highestScore");
 
 // Initialize layout
 resetGame();
+restartButton.addEventListener("click", resetGame);
+restartButton.addEventListener("touchend", resetGame);
 
 // Resets game variables and layouts but does not start the game (game starts on keypress)
-function resetGame() {
+function resetGame(event) {
+    event?.preventDefault();
     // Reset game progress
     phase = "waiting";
     lastTimestamp = undefined;
