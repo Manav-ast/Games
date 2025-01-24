@@ -20,7 +20,7 @@ let platforms = [];
 let sticks = [];
 let trees = [];
 
-// Todo: Save high score to localStorage (?)
+// Save high score to localStorage
 
 let score = 0;
 let highScore = localStorage.getItem("highScore") || 0;
@@ -49,8 +49,8 @@ const walkingSpeed = 4;
 const transitioningSpeed = 2;
 const fallingSpeed = 2;
 
-const heroWidth = 17; // 24
-const heroHeight = 30; // 40
+const heroWidth = 17;
+const heroHeight = 30;
 
 const canvas = document.getElementById("game");
 canvas.width = window.innerWidth; // Make the Canvas full screen
@@ -351,10 +351,10 @@ function draw() {
     ctx.restore();
 
     // Draw high score on the top left
-    ctx.fillStyle = "black";
-    ctx.font = "20px Arial";
+    // ctx.fillStyle = "black";
+    // ctx.font = "20px Arial";
     // ctx.fillText(`High Score: ${highScore}`, 20, 30);
-    highScoreElement.innerText = `Highest Score: ${highScore}`;
+    highScoreElement.innerText = `Highest: ${highScore}`;
 }
 
 
