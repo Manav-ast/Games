@@ -33,6 +33,28 @@ const heroDistanceFromEdge = 10; // While waiting
 const paddingX = 100; // The waiting position of the hero in from the original canvas size
 const perfectAreaSize = 10;
 
+// Set a single theme instead of day/night switching
+let currentTheme = 'original';
+
+// Retro styling configuration
+const pixelSize = 2; // Size of our "pixels" for the retro effect
+const retroColors = {
+    original: {
+        background: ['#BBD691', '#FEF1E1'],
+        trees: ['#6D8821', '#8FAC34', '#98B333'],
+        platforms: ['#000000', '#000000', '#000000'],
+        hero: {
+            body: '#000000',
+            eye: '#ffffff',
+            band: '#ff0000'
+        },
+        hill1: '#95C629',
+        hill2: '#659F1C',
+        sky: ['#BBD691', '#FEF1E1'],
+        stars: false
+    }
+};
+
 // The background moves slower than the hero
 const backgroundSpeedMultiplier = 0.2;
 
@@ -53,21 +75,79 @@ const heroWidth = 17;
 const heroHeight = 30;
 
 const canvas = document.getElementById("game");
-canvas.width = window.innerWidth; // Make the Canvas full screen
+canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
 const ctx = canvas.getContext("2d");
 
+// Reference existing elements instead of creating new ones
 const introductionElement = document.getElementById("introduction");
 const perfectElement = document.getElementById("perfect");
-const restartButton = document.getElementById("restart");
-const scoreElement = document.getElementById("score");
-const highScoreElement = document.getElementById("highestScore");
+const retroScoreElement = document.getElementById("score");
+const retroHighScoreElement = document.getElementById("highestScore");
+
+// Add retro styling to existing elements
+retroScoreElement.style.cssText = `
+    font-family: 'Pixelify Sans', sans-serif;
+    font-size: 40px;
+    color: #00ff00;
+    text-shadow: 2px 2px #000;
+`;
+
+retroHighScoreElement.style.cssText = `
+    font-family: 'Pixelify Sans', sans-serif;
+    font-size: 40px;
+    color: #ff00ff;
+    text-shadow: 2px 2px #000;
+`;
+
+// Retro UI Elements - Font loading
+document.addEventListener('DOMContentLoaded', function () {
+    try {
+        const retroFont = new FontFace('Pixelify Sans', sans - serif);
+        retroFont.load().then(() => {
+            document.fonts.add(retroFont);
+        }).catch(err => {
+            console.warn('Could not load the font', err);
+        });
+    } catch (error) {
+        console.warn('Font loading not supported', error);
+    }
+
+    // Start audio if available
+    if (typeof audioManager !== 'undefined') {
+        try {
+            audioManager.startBackgroundMusic();
+        } catch (error) {
+            console.warn('Audio could not be started', error);
+        }
+    }
+});
+
+// Create retro game over screen
+const gameOverScreen = document.createElement('div');
+gameOverScreen.id = 'retro-game-over';
+gameOverScreen.style.cssText = `
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'Pixelify Sans', sans-serif;
+    font-size: 48px;
+    color: #ff0000;
+    // text-shadow: 4px 4px #000;
+    text-align: center;
+    display: none;
+    z-index: 1000;
+`;
+gameOverScreen.innerHTML = `
+    <div>GAME OVER</div>
+    <div style="font-size: 24px; margin-top: 20px;">Press SPACE to restart</div>
+`;
+document.body.appendChild(gameOverScreen);
 
 // Initialize layout
 resetGame();
-restartButton.addEventListener("click", resetGame);
-restartButton.addEventListener("touchend", resetGame);
 
 // Resets game variables and layouts but does not start the game (game starts on keypress)
 function resetGame(event) {
@@ -80,8 +160,8 @@ function resetGame(event) {
 
     introductionElement.style.opacity = 1;
     perfectElement.style.opacity = 0;
-    restartButton.style.display = "none";
-    scoreElement.innerText = score;
+    gameOverScreen.style.display = "none";
+    retroScoreElement.innerText = score;
 
     // The first platform is always the same
     // x + w has to match paddingX
@@ -150,8 +230,6 @@ function generatePlatform() {
     platforms.push({ x, w });
 }
 
-resetGame();
-
 // If space was pressed restart the game
 window.addEventListener("keydown", function (event) {
     if (event.key == " ") {
@@ -199,6 +277,8 @@ window.addEventListener("touchend", function (event) {
     }
 }, { passive: false });
 
+// Add a fallback font if Pixelify Sans is not available
+document.body.style.fontFamily = "'Pixelify Sans', monospace, Arial, sans-serif";
 
 window.requestAnimationFrame(animate);
 
@@ -227,7 +307,7 @@ function animate(timestamp) {
                 if (nextPlatform) {
                     // Increase score
                     score += perfectHit ? 2 : 1;
-                    scoreElement.innerText = score;
+                    retroScoreElement.innerText = score;
 
                     if (perfectHit) {
                         perfectElement.style.opacity = 1;
@@ -287,7 +367,7 @@ function animate(timestamp) {
             const maxHeroY =
                 platformHeight + 100 + (window.innerHeight - canvasHeight) / 2;
             if (heroY > maxHeroY) {
-                restartButton.style.display = "block";
+                gameOver();
                 return;
             }
             break;
@@ -342,6 +422,9 @@ function draw() {
         (window.innerHeight - canvasHeight) / 2
     );
 
+    // Apply retro pixel effect - sets imageSmoothingEnabled to false for crisp pixels
+    ctx.imageSmoothingEnabled = false;
+
     // Draw scene
     drawPlatforms();
     drawHero();
@@ -350,39 +433,40 @@ function draw() {
     // Restore transformation
     ctx.restore();
 
-    // Draw high score on the top left
-    // ctx.fillStyle = "black";
-    // ctx.font = "20px Arial";
-    // ctx.fillText(`High Score: ${highScore}`, 20, 30);
-    highScoreElement.innerText = `Highest: ${highScore}`;
+    // Update retro UI elements
+    retroScoreElement.textContent = `SCORE: ${score}`;
+    retroHighScoreElement.textContent = `HIGH SCORE: ${highScore}`;
+
+    // Add retro-style scanlines effect
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+    for (let i = 0; i < canvas.height; i += 2) {
+        ctx.fillRect(0, i, canvas.width, 1);
+    }
 }
 
-
-restartButton.addEventListener("click", function (event) {
-    event.preventDefault();
-    resetGame();
-    restartButton.style.display = "none";
-});
-
 function drawPlatforms() {
+    const colors = retroColors[currentTheme];
+
     platforms.forEach(({ x, w }) => {
-        // Draw platform
-        ctx.fillStyle = "black";
-        ctx.fillRect(
+        // Draw platform with retro styling using current theme colors
+        drawRetroRect(
             x,
             canvasHeight - platformHeight,
             w,
-            platformHeight + (window.innerHeight - canvasHeight) / 2
+            platformHeight + (window.innerHeight - canvasHeight) / 2,
+            colors.platforms[0],
+            colors.platforms[1]
         );
 
         // Draw perfect area only if hero did not yet reach the platform
         if (sticks.last().x < x) {
-            ctx.fillStyle = "red";
-            ctx.fillRect(
+            ctx.fillStyle = '#ff0000';
+            drawRetroRect(
                 x + w / 2 - perfectAreaSize / 2,
                 canvasHeight - platformHeight,
                 perfectAreaSize,
-                perfectAreaSize
+                perfectAreaSize,
+                '#ff0000'
             );
         }
     });
@@ -390,65 +474,58 @@ function drawPlatforms() {
 
 function drawHero() {
     ctx.save();
-    ctx.fillStyle = "black";
     ctx.translate(
         heroX - heroWidth / 2,
         heroY + canvasHeight - platformHeight - heroHeight / 2
     );
 
-    // Body
-    drawRoundedRect(
+    // Hero outline for better visibility
+    const outlineColor = '#ffffff';
+
+    // Draw body outline - pixelated rectangle
+    drawRetroRect(
+        -heroWidth / 2 - 1,
+        -heroHeight / 2 - 1,
+        heroWidth + 2,
+        heroHeight - 2,
+        outlineColor
+    );
+
+    // Body - pixelated rectangle
+    drawRetroRect(
         -heroWidth / 2,
         -heroHeight / 2,
         heroWidth,
         heroHeight - 4,
-        5
+        retroColors[currentTheme].hero.body
     );
 
-    // Legs
+    // Legs - pixelated circles
     const legDistance = 5;
-    ctx.beginPath();
-    ctx.arc(legDistance, 11.5, 3, 0, Math.PI * 2, false);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(-legDistance, 11.5, 3, 0, Math.PI * 2, false);
-    ctx.fill();
 
-    // Eye
-    ctx.beginPath();
-    ctx.fillStyle = "white";
-    ctx.arc(5, -7, 3, 0, Math.PI * 2, false);
-    ctx.fill();
+    // Leg outlines
+    drawRetroCircle(legDistance, 11.5, 4, outlineColor);
+    drawRetroCircle(-legDistance, 11.5, 4, outlineColor);
 
-    // Band
-    ctx.fillStyle = "red";
-    ctx.fillRect(-heroWidth / 2 - 1, -12, heroWidth + 2, 4.5);
-    ctx.beginPath();
-    ctx.moveTo(-9, -14.5);
-    ctx.lineTo(-17, -18.5);
-    ctx.lineTo(-14, -8.5);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(-10, -10.5);
-    ctx.lineTo(-15, -3.5);
-    ctx.lineTo(-5, -7);
-    ctx.fill();
+    // Actual legs
+    drawRetroCircle(legDistance, 11.5, 3, retroColors[currentTheme].hero.body);
+    drawRetroCircle(-legDistance, 11.5, 3, retroColors[currentTheme].hero.body);
+
+    // Eye outline - pixelated circle
+    drawRetroCircle(5, -7, 4, outlineColor);
+
+    // Eye - pixelated circle
+    drawRetroCircle(5, -7, 3, retroColors[currentTheme].hero.eye);
+
+    // Band - pixelated rectangles
+    ctx.fillStyle = retroColors[currentTheme].hero.band;
+    drawRetroRect(-heroWidth / 2 - 1, -12, heroWidth + 2, 4.5, retroColors[currentTheme].hero.band);
+
+    // Band tails - pixelated triangles
+    drawRetroTriangle(-9, -14.5, -17, -18.5, -14, -8.5, retroColors[currentTheme].hero.band);
+    drawRetroTriangle(-10, -10.5, -15, -3.5, -5, -7, retroColors[currentTheme].hero.band);
 
     ctx.restore();
-}
-
-function drawRoundedRect(x, y, width, height, radius) {
-    ctx.beginPath();
-    ctx.moveTo(x, y + radius);
-    ctx.lineTo(x, y + height - radius);
-    ctx.arcTo(x, y + height, x + radius, y + height, radius);
-    ctx.lineTo(x + width - radius, y + height);
-    ctx.arcTo(x + width, y + height, x + width, y + height - radius, radius);
-    ctx.lineTo(x + width, y + radius);
-    ctx.arcTo(x + width, y, x + width - radius, y, radius);
-    ctx.lineTo(x + radius, y);
-    ctx.arcTo(x, y, x, y + radius, radius);
-    ctx.fill();
 }
 
 function drawSticks() {
@@ -459,9 +536,10 @@ function drawSticks() {
         ctx.translate(stick.x, canvasHeight - platformHeight);
         ctx.rotate((Math.PI / 180) * stick.rotation);
 
-        // Draw stick
+        // Draw stick with pixel effect
+        ctx.strokeStyle = '#f5bb00';
+        ctx.lineWidth = pixelSize * 2;
         ctx.beginPath();
-        ctx.lineWidth = 2;
         ctx.moveTo(0, 0);
         ctx.lineTo(0, -stick.length);
         ctx.stroke();
@@ -472,35 +550,104 @@ function drawSticks() {
 }
 
 function drawBackground() {
-    // Draw sky
+    const colors = retroColors[currentTheme];
+
+    // Draw sky with gradient
     var gradient = ctx.createLinearGradient(0, 0, 0, window.innerHeight);
-    gradient.addColorStop(0, "#BBD691");
-    gradient.addColorStop(1, "#FEF1E1");
+    gradient.addColorStop(0, colors.sky[0]);
+    gradient.addColorStop(1, colors.sky[1]);
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
 
-    // Draw hills
-    drawHill(hill1BaseHeight, hill1Amplitude, hill1Stretch, "#95C629");
-    drawHill(hill2BaseHeight, hill2Amplitude, hill2Stretch, "#659F1C");
+    // Draw hills with pixelated effect
+    drawPixelatedHill(hill1BaseHeight, hill1Amplitude, hill1Stretch, colors.hill1);
+    drawPixelatedHill(hill2BaseHeight, hill2Amplitude, hill2Stretch, colors.hill2);
 
     // Draw trees
-    trees.forEach((tree) => drawTree(tree.x, tree.color));
+    trees.forEach((tree) => drawRetroTree(tree.x, tree.color));
 }
 
-// A hill is a shape under a stretched out sinus wave
-function drawHill(baseHeight, amplitude, stretch, color) {
+// Draw sun for day theme
+function drawSun() {
+    ctx.save();
+
+    // Draw pixelated sun
+    const sunX = window.innerWidth * 0.8;
+    const sunY = window.innerHeight * 0.2;
+    const sunRadius = 30;
+
+    // Draw sun rays
+    ctx.fillStyle = '#FFD700';
+    for (let i = 0; i < 8; i++) {
+        const angle = (i / 8) * Math.PI * 2;
+        const rayX = sunX + Math.cos(angle) * (sunRadius + 15);
+        const rayY = sunY + Math.sin(angle) * (sunRadius + 15);
+        const rayWidth = 5;
+        const rayLength = 15;
+
+        ctx.save();
+        ctx.translate(rayX, rayY);
+        ctx.rotate(angle);
+        drawRetroRect(-rayWidth / 2, -rayLength / 2, rayWidth, rayLength, '#FFD700');
+        ctx.restore();
+    }
+
+    // Draw sun circle
+    drawRetroCircle(sunX, sunY, sunRadius, '#FFF200');
+
+    ctx.restore();
+}
+
+// Draw pixelated stars in the background
+function drawPixelatedStars() {
+    const starColors = ['#ffffff', '#f0f0f0', '#e0e0e0'];
+    const starCount = 50;
+
+    ctx.save();
+
+    // Use a fixed seed for consistent star positions
+    const seed = 12345;
+    const random = (min, max) => {
+        const x = Math.sin(seed + trees.length) * 10000;
+        return min + (x - Math.floor(x)) * (max - min);
+    };
+
+    for (let i = 0; i < starCount; i++) {
+        const x = random(0, window.innerWidth);
+        const y = random(0, window.innerHeight / 2);
+        const size = random(1, 3) * pixelSize;
+        const colorIndex = Math.floor(random(0, 3));
+
+        ctx.fillStyle = starColors[colorIndex];
+        ctx.fillRect(
+            Math.floor(x / pixelSize) * pixelSize,
+            Math.floor(y / pixelSize) * pixelSize,
+            size, size
+        );
+    }
+
+    ctx.restore();
+}
+
+// A pixelated hill under a stretched out sinus wave
+function drawPixelatedHill(baseHeight, amplitude, stretch, color) {
     ctx.beginPath();
     ctx.moveTo(0, window.innerHeight);
-    ctx.lineTo(0, getHillY(0, baseHeight, amplitude, stretch));
-    for (let i = 0; i < window.innerWidth; i++) {
-        ctx.lineTo(i, getHillY(i, baseHeight, amplitude, stretch));
+
+    // Create pixelated hill effect
+    for (let i = 0; i < window.innerWidth; i += pixelSize) {
+        const y = getHillY(i, baseHeight, amplitude, stretch);
+        // Round to nearest pixel grid
+        const pixelY = Math.floor(y / pixelSize) * pixelSize;
+        ctx.lineTo(i, pixelY);
     }
+
     ctx.lineTo(window.innerWidth, window.innerHeight);
     ctx.fillStyle = color;
     ctx.fill();
 }
 
-function drawTree(x, color) {
+function drawRetroTree(x, color) {
     ctx.save();
     ctx.translate(
         (-sceneOffset * backgroundSpeedMultiplier + x) * hill1Stretch,
@@ -508,28 +655,92 @@ function drawTree(x, color) {
     );
 
     const treeTrunkHeight = 5;
-    const treeTrunkWidth = 2;
+    const treeTrunkWidth = 2 * pixelSize;
     const treeCrownHeight = 25;
-    const treeCrownWidth = 10;
+    const treeCrownWidth = 10 * pixelSize;
 
-    // Draw trunk
-    ctx.fillStyle = "#7D833C";
-    ctx.fillRect(
+    // Get colors based on current theme
+    const colors = retroColors[currentTheme];
+
+    // Draw trunk with pixel effect
+    drawRetroRect(
         -treeTrunkWidth / 2,
         -treeTrunkHeight,
         treeTrunkWidth,
-        treeTrunkHeight
+        treeTrunkHeight,
+        '#7D833C'
     );
 
-    // Draw crown
-    ctx.beginPath();
-    ctx.moveTo(-treeCrownWidth / 2, -treeTrunkHeight);
-    ctx.lineTo(0, -(treeTrunkHeight + treeCrownHeight));
-    ctx.lineTo(treeCrownWidth / 2, -treeTrunkHeight);
-    ctx.fillStyle = color;
-    ctx.fill();
+    // Draw crown with pixel effect - use theme colors or provided color
+    drawRetroTriangle(
+        -treeCrownWidth / 2,
+        -treeTrunkHeight,
+        0,
+        -(treeTrunkHeight + treeCrownHeight),
+        treeCrownWidth / 2,
+        -treeTrunkHeight,
+        color || colors.trees[Math.floor(Math.random() * colors.trees.length)]
+    );
 
     ctx.restore();
+}
+
+// Helper functions for drawing pixelated shapes
+
+function drawRetroRect(x, y, width, height, color, strokeColor) {
+    // Round to nearest pixel grid
+    const pixelX = Math.floor(x / pixelSize) * pixelSize;
+    const pixelY = Math.floor(y / pixelSize) * pixelSize;
+    const pixelWidth = Math.ceil(width / pixelSize) * pixelSize;
+    const pixelHeight = Math.ceil(height / pixelSize) * pixelSize;
+
+    ctx.fillStyle = color;
+    ctx.fillRect(pixelX, pixelY, pixelWidth, pixelHeight);
+
+    if (strokeColor) {
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = pixelSize;
+        ctx.strokeRect(pixelX, pixelY, pixelWidth, pixelHeight);
+    }
+}
+
+function drawRetroCircle(x, y, radius, color) {
+    const pixelRadius = Math.ceil(radius / pixelSize) * pixelSize;
+
+    // Draw the circle using small squares
+    for (let px = -pixelRadius; px <= pixelRadius; px += pixelSize) {
+        for (let py = -pixelRadius; py <= pixelRadius; py += pixelSize) {
+            // If the pixel is inside the circle
+            if (px * px + py * py <= pixelRadius * pixelRadius) {
+                ctx.fillStyle = color;
+                ctx.fillRect(
+                    Math.floor((x + px) / pixelSize) * pixelSize,
+                    Math.floor((y + py) / pixelSize) * pixelSize,
+                    pixelSize,
+                    pixelSize
+                );
+            }
+        }
+    }
+}
+
+function drawRetroTriangle(x1, y1, x2, y2, x3, y3, color) {
+    // Convert to pixel grid
+    const px1 = Math.floor(x1 / pixelSize) * pixelSize;
+    const py1 = Math.floor(y1 / pixelSize) * pixelSize;
+    const px2 = Math.floor(x2 / pixelSize) * pixelSize;
+    const py2 = Math.floor(y2 / pixelSize) * pixelSize;
+    const px3 = Math.floor(x3 / pixelSize) * pixelSize;
+    const py3 = Math.floor(y3 / pixelSize) * pixelSize;
+
+    // Create a filled path
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(px1, py1);
+    ctx.lineTo(px2, py2);
+    ctx.lineTo(px3, py3);
+    ctx.closePath();
+    ctx.fill();
 }
 
 function getHillY(windowX, baseHeight, amplitude, stretch) {
@@ -544,4 +755,9 @@ function getHillY(windowX, baseHeight, amplitude, stretch) {
 function getTreeY(x, baseHeight, amplitude) {
     const sineBaseY = window.innerHeight - baseHeight;
     return Math.sinus(x) * amplitude + sineBaseY;
+}
+
+// Add game over screen
+function gameOver() {
+    gameOverScreen.style.display = 'block';
 }

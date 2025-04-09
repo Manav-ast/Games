@@ -1,65 +1,130 @@
-html, 
-body{
-    height: 100%;
+/* Retro Game Styling */
+body {
     margin: 0;
-}
-
-body{
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    padding: 0;
+    background-color: #BBD691;
+    overflow: hidden;
+    font-family: 'Pixelify Sans', sans-serif;
     cursor: pointer;
+    image-rendering: pixelated; /* For modern browsers */
+    image-rendering: crisp-edges; /* For Firefox */
+    image-rendering: -moz-crisp-edges; /* For older Firefox */
+    image-rendering: -webkit-optimize-contrast; /* For older Webkit */
 }
 
-.container{
+.container {
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100%;
+    position: relative;
 }
 
-#score{
+#game {
+    display: block;
+    position: relative;
+    image-rendering: pixelated;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    border: 2px solid #000;
+}
+
+/* CRT Screen Effect - Subtle version */
+#game::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.05),
+        rgba(0, 0, 0, 0.05) 1px,
+        transparent 1px,
+        transparent 2px
+    );
+    pointer-events: none;
+    z-index: 5;
+    opacity: 0.3;
+}
+
+/* Retro Score Display */
+#score {
     position: absolute;
     top: 30px;
     right: 30px;
-    font-size: 2rem;
-    font-weight: 900;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #000;
+    text-shadow: 1px 1px #fff;
+    font-family: 'Pixelify Sans', sans-serif;
+    z-index: 10;
+    letter-spacing: 2px;
 }
 
-#highestScore{
+#highestScore {
     position: absolute;
     top: 30px;
     left: 30px;
-    font-size: 2rem;
-    font-weight: 900;
+    font-size: 50px;
+    font-weight: 700;
+    color: #000;
+    text-shadow: 1px 1px #fff;
+    font-family: 'Pixelify Sans', sans-serif;
+    z-index: 10;
+    letter-spacing: 2px;
 }
 
-#introduction{
+/* Game Over Screen Animation */
+#retro-game-over {
+    animation: flicker 0.5s infinite;
+    z-index: 100;
+    text-shadow: 2px 2px 0 #000;
+    letter-spacing: 4px;
+    transform: skew(-5deg, 0);
+    font-family: 'Pixelify Sans', sans-serif;
+    font-weight: 700;
+    color: #000;
+}
+
+@keyframes flicker {
+    0% { opacity: 1; }
+    50% { opacity: 0.8; }
+    100% { opacity: 1; }
+}
+
+#introduction {
     width: 200px;
     height: 150px;
     position: absolute;
     font-weight: 600;
-    font-size: 0.8rem;
+    font-size: 1rem;
     text-align: center;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Pixelify Sans', sans-serif;
     transition: opacity 2s;
+    color: #000;
+    text-shadow: 1px 1px #fff;
+    z-index: 10;
+    letter-spacing: 1px;
+    animation: pulse 2s infinite alternate;
 }
 
-#restart{
-    position: absolute;
-    width: 120px;
-    height: 120px;
-    border-radius: 50%;
-    color: white;
-    background-color: red;
-    border: none;
-    font-weight: 700;
-    font-size: 1.2rem;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    display: none;
-    cursor: pointer;
-}
-
-#perfect{
+#perfect {
     position: absolute;
     opacity: 0;
-    transform: opacity 2s;
+    transition: opacity 2s;
+    color: #ff0000;
+    font-family: 'Pixelify Sans', sans-serif;
+    font-size: 2rem;
+    font-weight: 700;
+    text-shadow: 2px 2px #000;
+    z-index: 15;
+    animation: pulse 0.5s infinite alternate;
+    letter-spacing: 2px;
+    transform: skew(-5deg, 0) rotate(-5deg);
+}
+
+@keyframes pulse {
+    from { transform: scale(1); }
+    to { transform: scale(1.1); }
 }
